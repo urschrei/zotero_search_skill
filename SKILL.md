@@ -17,6 +17,7 @@ This skill enables searching and retrieving documents from the user's local Zote
 
 **Requirements:**
 - Python ≥3.9
+- Python 3.14 is not yet supported
 - Pyzotero ≥1.7.3 with CLI support
 - Claude Code (this skill does not work in web Claude)
 - Zotero desktop application running locally with local API enabled
@@ -249,19 +250,19 @@ Format search results for readability based on result count:
 - Title (with author, year)
 - Publication venue
 - Abstract (first 2-3 sentences if lengthy)
-- DOI and URL
-- Full local file path (if available)
+- DOI or URL
+- Local file path (if available)
+- If it wasn't a full-text search, point out that this may yield more results
 
 **For 11-20 results:** Show condensed format
 - Title, authors, year
 - Publication venue
-- Full local file path (if available)
-- Offer to show abstract (first 2-3 sentences if lengthy)
+- Local file path
 
 **For 21+ results:** Provide overview
 - Total count and brief summary
-- Group by theme/category if applicable, with count
-- Show top 5-10 most relevant results. If grouping, show most relevant results _per group_
+- Group by theme/category if applicable
+- Show top 5-10 most relevant results
 - Offer to show more details or refine search
 
 **Always include:**
@@ -269,62 +270,144 @@ Format search results for readability based on result count:
 2. Local file paths when PDFs are attached (highly useful for user)
 3. Offer to refine search if results seem too broad or narrow
 
-Adapt format based on context and user needs—these are sensible defaults.
+Adapt format based on context and user needs — these are sensible defaults.
+
+## After Initial Search: Proactive Analysis
+
+After presenting search results, analyze findings and suggest productive next steps. Initially, offer to act as a research assistant, not just a command executor.
+
+**Pattern Recognition - Always do this:**
+1. Identify themes or clusters in results
+2. Notice temporal patterns (date ranges, gaps)
+3. Check for missing expected work or authors
+4. Assess coverage (methodologies, perspectives, geographies)
+
+**Suggest Next Steps Based on Findings:**
+
+**If results show clear themes:**
+- "These 15 papers cluster into 3 approaches: [A], [B], [C]. Want me to break down each cluster?"
+- "I notice 2 distinct debates here. Want to explore each separately?"
+
+**If temporal patterns emerge:**
+- "Most papers are from 2020-2023. Want to search for earlier foundational work?"
+- "There's a gap from 2015-2018. Want to search that period specifically?"
+
+**If coverage seems incomplete:**
+- "These are all quantitative studies. Want to search for qualitative approaches?"
+- "All papers are from Western contexts. Want to search for [other region] research?"
+- "I see methodological papers but few empirical applications. Want to find applications?"
+
+**If specific authors dominate:**
+- "5 papers by [Author]. Want to find other perspectives or critiques?"
+- "Several papers cite [Key Author]. Want to search for their work?"
+
+**If PDFs are missing:**
+- "Only 4 of 12 papers have PDFs attached. Want me to identify which are missing?"
+
+**If results are too broad:**
+- "Got 47 results. Want to filter by time period, item type, or add more specific terms?"
+
+**If results are too narrow:**
+- "Only 2 results. Try broader terms, remove filters, or use full-text search?"
+
+**Research workflow suggestions:**
+- "Ready to do a thematic analysis of these results?"
+- "Want me to identify gaps in this literature?"
+- "Should we create a reading priority list?"
+- "Want to track how thinking evolved over time?"
+
+**Remember user feedback*:*
+- Don't be too pushy, overeager, or obseqious. Act like a diligent postdoc
+- Remember the user's directives in this regard: they may want you to "just" act as a search conduit, or do extensive analysis, or anything in between – respect their choice, but allow them to change their mind.
+
+## Advanced Research Workflows
+
+For comprehensive research analysis patterns, set operations, processing recipes, and full-text integration workflows, see **[references/research-workflows.md](references/research-workflows.md)**.
+
+That reference file provides detailed guidance on:
+
+**Research Analysis Patterns:**
+- Thematic Clustering - Group papers by theme/approach
+- Gap Analysis - Identify what's missing or underexplored
+- Research Trajectory Analysis - Track how thinking evolved over time
+- Methodological Survey - Understand research approaches in the field
+- Reading List Prioritization - Create tiered reading lists
+
+**Set Operations:**
+- Intersection (papers about BOTH A AND B)
+- Union (papers about A OR B)
+- Difference (papers about A but NOT B)
+- Temporal filtering
+
+**Processing Recipes:**
+- Group by year, author, item type
+- Find papers without PDFs
+- Extract unique authors
+- Identify collaborative work
+
+**Full-Text Integration:**
+- Evidence extraction workflows
+- Comparative deep dives
+- Methodology learning
+- When to read PDFs vs. stay with metadata
+
+Use these workflows when basic search + proactive suggestions aren't sufficient for the user's research needs.
 
 ## Workflow Decision Tree
 
 1. **User mentions searching Zotero?** → Use this skill
-2. **Verify Desktop Claude** → If web Claude, inform limitation
-3. **Check if Pyzotero CLI is available** → If not, inform user about installation
+2. **Verify Desktop Claude** → If web Claude, inform limitation and stop
+3. **Check Pyzotero and Zotero availability** → Run `pyzotero test`. If it fails, inform user
 4. **Determine search parameters:**
    - What is the query/topic?
    - Should search be full-text or metadata-only?
-   - Should results be filtered by item type? (Prompt if not specified, show options with `pyzotero itemtypes`)
-   - Is this within a specific collection? (Use `pyzotero listcollections` to find key)
+   - Should results be filtered by item type?
+   - Is this within a specific collection?
    - How many results needed?
    - JSON output or human-readable?
 5. **Execute search** using `pyzotero search` with appropriate flags
-6. **Present results** in a readable format, highlighting:
-   - Number of results found. This is also available for JSON output. This count is highly informative for the user and should always be shown
-   - For each result: title, authors, publication info, abstract (if relevant)
-   - Local file paths for PDFs (very useful!). Always show full file paths
-7. **Offer refinement** if results are too broad or too narrow
+6. **Present results** following the "Presenting Results to User" guidelines
+7. **Analyze patterns** (see "After Initial Search: Proactive Analysis"):
+   - Identify themes, temporal patterns, coverage
+   - Note what's present and what's missing
+8. **Suggest next steps** based on analysis:
+   - Refinement options if too broad/narrow
+   - Research analysis patterns if appropriate
+   - Set operations if comparing concepts
+   - Reading prioritization if many results
+9. **Iterate** based on user's chosen direction
 
 ## Common Usage Patterns
 
-**Pattern 1: Exploratory topic search**
+**Pattern 1: Basic exploratory search**
 ```
 User: "Search my Zotero for papers about ocean acidification"
 → pyzotero search -q "ocean acidification" --itemtype journalArticle --json
+→ Present results
+→ Analyze: "Found 12 papers. I notice 3 focus on coral reefs, 8 on broader marine ecosystems, 
+   and 1 on economic impacts. Most are from 2018-2023. Want me to break down each cluster?"
 ```
 
-**Pattern 2: Full-text search across all documents**
+**Pattern 2: Full-text search with gap analysis**
 ```
 User: "Find everything in my library that mentions 'adaptation strategies'"
-→ pyzotero search -q "adaptation strategies" --fulltext
+→ pyzotero search -q "adaptation strategies" --fulltext --json
+→ Present results
+→ Analyze: "Found 23 papers, but all are from developed countries. Want to search for 
+   developing world contexts? Also, these are all climate-focused—want to broaden to other risks?"
 ```
 
-**Pattern 3: Finding items in a specific collection**
+**Pattern 3: Advanced research workflow**
 ```
-User: "What do I have about renewable energy in my Climate Research collection?"
-→ pyzotero listcollections  # Find collection key
-→ pyzotero search --collection <KEY> -q "renewable energy"
-```
-
-**Pattern 4: Comprehensive filtered search**
-```
-User: "Find recent journal articles and conference papers about neural networks"
-→ pyzotero search -q "neural networks" --itemtype journalArticle --itemtype conferencePaper --fulltext --json
+User: "What do I have about neural networks? I need to understand the landscape."
+→ pyzotero search -q "neural networks" --json
+→ Present results with initial analysis
+→ Suggest: "Found 18 papers. Want me to do a thematic clustering? Or track how thinking 
+   evolved over time? Or create a prioritized reading list?"
+→ If user wants any advanced analysis, use patterns from references/research-workflows.md
 ```
 
-**Pattern 5: Discovering available options**
-```
-User: "What types of documents can I search for?"
-→ pyzotero itemtypes
-
-User: "What collections do I have?"
-→ pyzotero listcollections
-```
+**For more complex research workflows** (comparative searches, set operations, thematic analysis, reading list prioritization, etc.), see patterns in **references/research-workflows.md**.
 
 ## Helper Commands
 
@@ -344,20 +427,31 @@ Shows all available item types that can be used with `--itemtype`. Use this when
 
 If commands fail:
 - **"Connection error"** → Check if Zotero desktop application is running
-- **"Command not found"** → Verify Pyzotero CLI is installed: `uv tool install --with click "pyzotero"`
+- **"Command not found"** → Verify Pyzotero CLI is installed: `uv tool install "pyzotero[cli]" --upgrade`
 - **"No results"** → Try:
   - Removing item type filters
   - Using full-text search with `--fulltext`
   - Broadening the query
   - Checking collection key with `pyzotero listcollections`
 
-## Tips for Best Results
+## Tips for Research-Focused Use
 
-1. **Start broad, then narrow:** Begin with a simple query, then add filters based on results
-2. **Use full-text for comprehensive searches:** Add `--fulltext` when searching for specific concepts that might not be in titles
-3. **Always use `--json` for processing:** When you need to extract specific information or present structured data
-4. **Leverage local file paths:** The output includes paths to local PDFs, which is very useful for file operations
-5. **Show item type options:** When user asks about filtering, show them `pyzotero itemtypes` output first
-6. **List collections proactively:** If user mentions collections, show them `pyzotero listcollections` to see what's available
-7. **Keep track of counts:** When grouping or categorising results, display a count per category
-8. **Use jq, sed, and awk for counting, mixing, and matching:** Result sets can potentially be very large. Use standard tools at your disposal to manage this
+1. **Act as research assistant, not just command executor**: After searches, analyze patterns, suggest next steps, offer insights
+
+2. **Start broad, then narrow iteratively**: Initial search reveals landscape, then refine based on what you find
+
+3. **Combine search with analysis**: Don't just return results—identify themes, gaps, trajectories
+
+4. **Use advanced workflows when appropriate**: For complex research tasks, consult **references/research-workflows.md** for set operations, thematic analysis, reading prioritization, and more
+
+5. **Always use `--json` for analysis workflows**: Processing recipes require structured data
+
+6. **Leverage local file paths for deep dives**: When key papers emerge, read the PDFs directly using the local paths
+
+7. **Suggest rather than wait**: Offer thematic analysis, gap identification, prioritization—don't wait to be asked
+
+8. **Track patterns across searches**: Note what appears repeatedly, what's surprisingly absent, what conflicts
+
+9. **Group and count everything**: When categorizing, always show counts per category
+
+10. **Be proactive about next steps**: Every search result should include suggested follow-up directions.
