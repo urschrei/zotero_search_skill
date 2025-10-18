@@ -27,9 +27,9 @@ This skill enables searching and retrieving documents from the user's local Zote
 pyzotero test
 ```
 
-If Pyzotero is not installed, install using:
+If Pyzotero is not installed, or if the version is too low (`pyzotero --version` to check), install it using:
 ```bash
-uv tool install "pyzotero[cli]"
+uv tool install "pyzotero[cli]" --upgrade
 ```
 
 **Alternative:** Run without permanent installation using:
@@ -37,7 +37,7 @@ uv tool install "pyzotero[cli]"
 uvx --from "pyzotero[cli]" pyzotero search -q "your query"
 pipx run --spec "pyzotero[cli]" pyzotero search -q "your query"
 ```
-The second prerequsite is the Zotero desktop application running locally, with local API enabled. Test by calling:
+The second prerequisite is the Zotero desktop application running locally, with local API enabled. Test by calling:
 
 ```bash
 pyzotero test
