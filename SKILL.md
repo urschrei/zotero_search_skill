@@ -264,6 +264,7 @@ Format search results for readability based on result count:
 - Group by theme/category if applicable
 - Show top 5-10 most relevant results
 - Offer to show more details or refine search
+- Any publication you mention should include author and year
 
 **Always include:**
 1. Total result count at the start ("Found 12 journal articles")
