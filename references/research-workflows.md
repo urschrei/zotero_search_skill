@@ -10,12 +10,15 @@ This reference provides advanced patterns for using Zotero search as a research 
    - Research Trajectory Analysis
    - Methodological Survey
    - Reading List Prioritization
+   - Finding Seminal Works
+   - Literature Expansion Workflows
 
 2. Set Operations and Combining Searches
    - Intersection (AND)
    - Union (OR)
    - Difference (NOT)
    - Temporal Filtering
+   - Comparing Local Library vs External Literature
 
 3. Processing Recipes (jq patterns)
    - Group by Year
@@ -84,6 +87,33 @@ Theme 3: Techno-managerial solutions (3 papers)
 - What populations or cases are studied?
 - What theoretical perspectives are present?
 
+**Comparing local library against broader literature:**
+
+Use Semantic Scholar to find important papers not yet in the library:
+
+```bash
+# Search S2 for highly-cited papers on a topic
+pyzotero s2search -q "topic" --sort citations --min-citations 200 --limit 50
+
+# Results include inLibrary: true/false
+# Papers with inLibrary: false and high citations are gaps worth filling
+```
+
+**Gap analysis workflow:**
+1. Search local Zotero for a topic: `pyzotero search -q "topic" --json`
+2. Search Semantic Scholar for the same topic, sorted by citations
+3. Compare: which highly-cited papers are missing locally?
+4. For papers in library, check their references for foundational works:
+   `pyzotero references --doi "..." --min-citations 100`
+5. Report: "You have 15 papers on X, but are missing these 5 highly-cited works..."
+
+**Finding what you should have cited:**
+```bash
+# For a paper you're writing about, find highly-cited related work
+pyzotero related --doi "10.1234/your-paper" --min-citations 100
+# Any with inLibrary: false might be important omissions
+```
+
 ### Research Trajectory Analysis
 
 **When:** User wants to understand how thinking evolved
@@ -103,7 +133,7 @@ Early period (2010-2015): 5 papers
 - Focus: Problem definition and measurement
 - Seminal: [Author1 2012]
 
-Middle period (2016-2019): 12 papers  
+Middle period (2016-2019): 12 papers
 - Focus: Causal mechanisms and theory-building
 - Shift: From correlation to causation
 - Key debate: [X vs Y perspective]
@@ -113,6 +143,27 @@ Recent period (2020-2024): 15 papers
 - Methods: More experimental, mixed-methods
 - Current frontier: [emerging questions]
 ```
+
+**Tracing intellectual lineages with Semantic Scholar:**
+
+Use citations and references to trace how ideas developed:
+
+```bash
+# Find what a seminal paper built upon (its foundations)
+pyzotero references --doi "10.1234/seminal-paper" --min-citations 100
+
+# Find influential work that built on the seminal paper
+pyzotero citations --doi "10.1234/seminal-paper" --min-citations 50
+
+# Trace a chain: paper -> its most-cited references -> their references
+```
+
+**Workflow for tracing a research lineage:**
+1. Start with a key paper in the user's library
+2. Use `references` to find its intellectual foundations (filter by citations for the important ones)
+3. Use `citations` to find subsequent influential work
+4. Check `inLibrary` to see which papers the user already has
+5. Recommend filling gaps in the lineage
 
 ### Methodological Survey
 
@@ -144,6 +195,121 @@ Recent period (2020-2024): 15 papers
    - **Supplementary (rest)**: For completeness
 3. Within each tier, suggest reading order
 4. Note why each paper matters
+
+**Using citation counts to identify influential work:**
+
+```bash
+# Find highly-cited papers on a topic (sorted by citations)
+pyzotero s2search -q "topic" --sort citations --min-citations 100
+
+# For papers already in library, check their citation impact via Semantic Scholar
+# by looking up individual DOIs
+pyzotero citations --doi "10.1234/example" --min-citations 50
+```
+
+**Tiering by citation count:**
+- **Seminal (500+ citations)**: Foundational works everyone should know
+- **Influential (100-500 citations)**: Important contributions shaping the field
+- **Emerging (10-100 citations)**: Recent work gaining traction
+- **New (<10 citations)**: Latest research, not yet widely cited
+
+### Finding Seminal Works
+
+**When:** User asks for "foundational", "seminal", "classic", or "most important" papers on a topic
+
+**Workflow:**
+1. Search Semantic Scholar sorted by citations:
+   ```bash
+   pyzotero s2search -q "topic" --sort citations --min-citations 500 --limit 20
+   ```
+2. Check which are already in library (`inLibrary` field)
+3. For the top results, verify they're actually foundational (not just popular):
+   - Check publication date (seminal works are often older)
+   - Read abstracts to confirm they're theoretical/methodological contributions
+4. Present tiered results with context
+
+**Example output format:**
+```
+Seminal works on [topic] (sorted by citations):
+
+Foundational (1000+ citations):
+1. [Author 2005] "Title" - 3,421 citations - IN LIBRARY
+   Established the theoretical framework for...
+
+2. [Author 2008] "Title" - 2,156 citations - NOT IN LIBRARY
+   Introduced the methodology widely used for...
+
+Highly Influential (500-1000 citations):
+3. [Author 2012] "Title" - 876 citations - IN LIBRARY
+   ...
+```
+
+**Finding foundational works for a specific paper:**
+```bash
+# What did this influential paper build upon?
+pyzotero references --doi "10.1234/influential" --min-citations 200
+```
+
+### Literature Expansion Workflows
+
+**When:** User wants to systematically expand their reading from papers they already have
+
+**Pattern 1: Snowball from a seed paper**
+
+Start with one important paper and expand outward:
+
+```bash
+# 1. Find semantically related papers
+pyzotero related --doi "10.1234/seed-paper" --min-citations 50
+
+# 2. Find what it cites (its foundations)
+pyzotero references --doi "10.1234/seed-paper" --min-citations 100
+
+# 3. Find what cites it (subsequent work)
+pyzotero citations --doi "10.1234/seed-paper" --min-citations 50
+```
+
+Check `inLibrary` in results to identify gaps.
+
+**Pattern 2: Expand from a collection**
+
+For a set of papers (e.g., a Zotero collection):
+
+1. Get DOIs from the collection:
+   ```bash
+   pyzotero search --collection COLLECTIONKEY --json | jq '.items[].doi'
+   ```
+
+2. For each DOI, find related papers:
+   ```bash
+   pyzotero related --doi "DOI" --min-citations 50 --limit 10
+   ```
+
+3. Aggregate results, deduplicate, and identify papers that appear related to multiple seed papers (these are likely central to the topic)
+
+**Pattern 3: Citation network exploration**
+
+For understanding a research community:
+
+1. Start with a highly-cited paper in the field
+2. Get its citations (who builds on it):
+   ```bash
+   pyzotero citations --doi "..." --min-citations 20 --limit 100
+   ```
+3. Among citing papers, identify those that are themselves highly cited (influential followers)
+4. These form the "core" of an active research programme
+
+**Pattern 4: Finding review articles**
+
+Review articles synthesise a field and cite many foundational works:
+
+```bash
+# Search for reviews (often have "review" in title)
+pyzotero s2search -q "topic review" --sort citations --min-citations 100
+
+# Then get references from a good review to find the key primary sources
+pyzotero references --doi "10.1234/review-article" --min-citations 50
+```
 
 ## Set Operations and Combining Searches
 
@@ -210,6 +376,46 @@ pyzotero search -q "topic" --json | \
   jq '{count: ([.items[] | select(.date >= "2015" and .date <= "2019")] | length),
        items: [.items[] | select(.date >= "2015" and .date <= "2019")]}'
 ```
+
+### Comparing Local Library vs External Literature
+
+**Use case:** Finding important papers you don't have yet
+
+The Semantic Scholar commands automatically include `inLibrary: true/false` for each result, making it easy to identify gaps.
+
+**Workflow 1: Find missing highly-cited papers**
+```bash
+# Search S2 for highly-cited papers on a topic
+pyzotero s2search -q "topic" --sort citations --min-citations 100 --limit 50
+
+# Filter results to show only papers NOT in library
+# (parse JSON output and filter where inLibrary is false)
+```
+
+**Workflow 2: Compare coverage systematically**
+```bash
+# 1. Count papers in local library on topic
+pyzotero search -q "topic" --json | jq '.count'
+
+# 2. Search S2 for highly-cited papers
+pyzotero s2search -q "topic" --sort citations --min-citations 50 --limit 100
+
+# 3. Count how many of those you have vs don't have
+# Results show inLibrary field for each paper
+```
+
+**Workflow 3: Find related papers not in library**
+```bash
+# For a key paper you have, find related work you're missing
+pyzotero related --doi "10.1234/paper-you-have" --min-citations 50
+
+# Papers with inLibrary: false are potential additions
+```
+
+**Interpreting results:**
+- High `inLibrary: true` count = good coverage of the field
+- Many highly-cited papers with `inLibrary: false` = significant gaps
+- Use citation counts to prioritise which gaps to fill first
 
 ## Processing Recipes
 

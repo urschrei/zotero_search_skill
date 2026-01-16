@@ -1,6 +1,6 @@
 ---
 name: zotero-search
-description: Search and retrieve documents from the user's local Zotero library using the Pyzotero CLI. **Claude code only** - requires connection to local Zotero instance. This skill should be used when the user asks to search their Zotero library, find papers or references, or query their personal research collection. Returns rich metadata including titles, authors, dates, abstracts, and bibliographic information with local file paths.
+description: Search the user's local Zotero library, find related papers via Semantic Scholar, and discover citations/references. **Claude code only** - requires local Zotero instance. Use when the user asks to search their Zotero library, find papers on a topic, explore citations of a paper, or find related literature. Supports cross-referencing Semantic Scholar results against the local library.
 ---
 
 # Zotero Search
@@ -423,6 +423,152 @@ Shows all collections with their keys and names. Use this when user refers to a 
 pyzotero itemtypes
 ```
 Shows all available item types that can be used with `--itemtype`. Use this when user is unsure what types to search for.
+
+## Semantic Scholar Integration
+
+The pyzotero CLI includes commands to search Semantic Scholar's database of over 200M papers. These commands can cross-reference results against the local Zotero library.
+
+### Find Related Papers
+
+Find papers semantically similar to a given paper using SPECTER2 embeddings:
+
+```bash
+pyzotero related --doi "10.1038/nature12373"
+pyzotero related --doi "10.1038/nature12373" --limit 50
+```
+
+**When to use:** User wants to discover papers similar to one they already have, or wants to expand their reading in a particular direction.
+
+### Find Citations (Who Cites This Paper)
+
+Find papers that cite a given paper:
+
+```bash
+pyzotero citations --doi "10.1038/nature12373"
+pyzotero citations --doi "10.1038/nature12373" --limit 200
+```
+
+**When to use:** User wants to trace how a paper has influenced subsequent research, find more recent work building on a foundational paper, or assess a paper's impact.
+
+### Find References (What This Paper Cites)
+
+Find papers referenced by a given paper:
+
+```bash
+pyzotero references --doi "10.1038/nature12373"
+pyzotero references --doi "10.1038/nature12373" --limit 200
+```
+
+**When to use:** User wants to understand the foundations of a paper, find earlier work in a research lineage, or explore the intellectual context of a paper.
+
+### Search Semantic Scholar
+
+Search across Semantic Scholar's full paper index:
+
+```bash
+pyzotero s2search -q "climate adaptation"
+pyzotero s2search -q "machine learning" --year 2020-2024
+pyzotero s2search -q "neural networks" --open-access --limit 50
+pyzotero s2search -q "deep learning" --sort citations --min-citations 100
+```
+
+Options:
+- `--year`: Filter by year (e.g., "2020", "2018-2022", "2020-")
+- `--open-access`: Only return open access papers
+- `--sort`: Sort by `citations` (most cited first) or `year` (most recent first)
+- `--min-citations`: Only return papers with at least N citations
+- `--limit`: Maximum results (default: 20, max: 100)
+
+**When to use:** User wants to find papers beyond their local Zotero library, or wants to check what's available on a topic before adding to their collection.
+
+### Finding Highly-Cited and Seminal Works
+
+All Semantic Scholar commands support filtering by citation count using `--min-citations`:
+
+```bash
+# Find highly-cited related papers
+pyzotero related --doi "10.1038/nature12373" --min-citations 100
+
+# Find influential papers that cite a given work
+pyzotero citations --doi "10.1038/nature12373" --min-citations 50
+
+# Find well-cited foundational references
+pyzotero references --doi "10.1038/nature12373" --min-citations 200
+
+# Search for seminal works on a topic
+pyzotero s2search -q "transformer architecture" --sort citations --min-citations 500
+```
+
+**When to use:**
+- User asks for "important", "seminal", "foundational", or "highly-cited" papers
+- User wants to identify the most influential works in a field
+- User needs to prioritise reading the most impactful literature
+
+### Cross-Referencing with Local Zotero
+
+All Semantic Scholar commands include an `inLibrary` field in their JSON output indicating whether each paper exists in the local Zotero library (matched by DOI). This is enabled by default.
+
+To disable library checking (faster, but no cross-reference):
+```bash
+pyzotero related --doi "10.1038/nature12373" --no-check-library
+```
+
+### Output Format
+
+All Semantic Scholar commands output JSON:
+
+```json
+{
+  "count": 20,
+  "papers": [
+    {
+      "paperId": "abc123",
+      "doi": "10.1234/example",
+      "title": "Example Paper Title",
+      "authors": ["John Doe", "Jane Smith"],
+      "year": 2023,
+      "venue": "Nature",
+      "citationCount": 150,
+      "referenceCount": 45,
+      "isOpenAccess": true,
+      "openAccessPdfUrl": "https://example.com/paper.pdf",
+      "inLibrary": false
+    }
+  ]
+}
+```
+
+### Common Workflows
+
+**Literature expansion from a seed paper:**
+```
+User: "I have this paper about coral bleaching (DOI: 10.1234/coral). What else should I read?"
+1. Run: pyzotero related --doi "10.1234/coral"
+2. Present related papers, highlighting those NOT in library (inLibrary: false)
+3. Offer: "5 of these 20 related papers are already in your library. Want me to focus on the 15 new ones?"
+```
+
+**Finding foundational and follow-up work:**
+```
+User: "I want to understand the impact of this key paper"
+1. Run: pyzotero references --doi "..." (what it builds on)
+2. Run: pyzotero citations --doi "..." (what built on it)
+3. Summarise: "This paper cites 45 works (foundational literature) and has been cited 150 times. Of the citing papers, 3 are in your library."
+```
+
+**Checking coverage on a topic:**
+```
+User: "Am I missing anything important on topic X?"
+1. Run: pyzotero s2search -q "topic X" --limit 50
+2. Compare with local search: pyzotero search -q "topic X" --json
+3. Report: "Semantic Scholar shows 50 papers on this topic. You have 12 in your library. Here are the most-cited ones you're missing..."
+```
+
+### Error Handling for Semantic Scholar Commands
+
+- **"Paper not found"**: The DOI may not be in Semantic Scholar's index. Try searching by title instead.
+- **"Rate limit exceeded"**: Wait a moment and try again. Semantic Scholar has a shared rate limit of 1000 req/s.
+- **Connection errors**: Check internet connectivity.
 
 ## Error Handling
 
