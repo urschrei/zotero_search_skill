@@ -39,7 +39,7 @@ pyzotero search -q "adaptation" --itemtype journalArticle --json
 | `--itemtype` | Filter by type | `--itemtype journalArticle` |
 | `--fulltext` | Search PDF contents | `--fulltext` |
 | `--limit` | Max results | `--limit 50` |
-| `--json` | JSON output (always use) | `--json` |
+| `--json` | JSON output (required for local search) | `--json` |
 
 ### Item Types
 
@@ -85,6 +85,8 @@ Extend beyond local library with Semantic Scholar commands:
 | `citations` | Find citing papers | `pyzotero citations --doi "10.1234/..."` |
 | `references` | Find referenced papers | `pyzotero references --doi "10.1234/..."` |
 | `s2search` | Search S2 by keyword | `pyzotero s2search -q "topic"` |
+
+**Note:** Semantic Scholar commands output JSON by default and do not require (or support) the `--json` flag.
 
 ### Key Options
 
