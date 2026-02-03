@@ -1,6 +1,6 @@
 ---
 name: zotero-search
-description: Search the user's local Zotero library, find related papers via Semantic Scholar, and discover citations/references. **Claude only** - this skill requires a local Zotero instance and access to a port on localhost. Use when the user asks to search their Zotero library, find papers on a topic, explore citations of a paper, or find related literature. Supports cross-referencing Semantic Scholar results against the local library.
+description: Search the user's local Zotero library, find related papers via Semantic Scholar, and discover citations/references. **Claude Code only** - this skill requires a local Zotero instance and access to a port on localhost. Use when the user asks to search their Zotero library, find papers on a topic, explore citations of a paper, or find related literature. Supports cross-referencing Semantic Scholar results against the local library.
 ---
 
 # Zotero Search Skill
