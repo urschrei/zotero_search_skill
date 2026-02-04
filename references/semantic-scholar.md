@@ -110,6 +110,43 @@ pyzotero related --doi "10.1038/nature12373" --no-check-library
 - Many highly-cited papers with `inLibrary: false` = significant gaps
 - Use citation counts to prioritise which gaps to fill first
 
+### DOI Index Caching
+
+For repeated cross-referencing operations, you can cache a DOI index locally to avoid repeated library scans:
+
+```bash
+# Build a cached DOI index from your library
+pyzotero doiindex > ~/zotero-dois.json
+
+# Use the cached index for faster cross-referencing
+pyzotero s2search -q "topic" --doi-index ~/zotero-dois.json
+pyzotero related --doi "10.1234/example" --doi-index ~/zotero-dois.json
+```
+
+**When to use caching:**
+- Running multiple S2 commands in a single session
+- Large library where scanning is slow
+- Batch operations comparing many S2 results against local holdings
+
+**Pattern comparison:**
+
+Without caching (library scanned each time):
+```bash
+pyzotero s2search -q "topic A" --sort citations
+pyzotero s2search -q "topic B" --sort citations
+pyzotero related --doi "10.1234/paper1"
+# Each command scans the library for DOIs
+```
+
+With caching (library scanned once):
+```bash
+pyzotero doiindex > ~/zotero-dois.json
+pyzotero s2search -q "topic A" --sort citations --doi-index ~/zotero-dois.json
+pyzotero s2search -q "topic B" --sort citations --doi-index ~/zotero-dois.json
+pyzotero related --doi "10.1234/paper1" --doi-index ~/zotero-dois.json
+# Library scanned only once for doiindex
+```
+
 ## Output Format
 
 All Semantic Scholar commands output JSON:
