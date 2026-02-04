@@ -10,7 +10,7 @@ Search and retrieve documents from a local Zotero library using the pyzotero CLI
 ## Prerequisites
 
 - Zotero desktop application running with local API enabled
-- pyzotero CLI installed (`pip install pyzotero[cli]` or `uv tool install "pyzotero[cli]@latest"` if they have uv in their $PATH). The Pyzotero version must be >=1.8.0
+- pyzotero CLI installed (`pip install pyzotero[cli]` or `uv tool install "pyzotero[cli]@latest"` if they have uv in their $PATH). The Pyzotero version must be >=1.9.0
 - Test connection: `pyzotero test`
 
 ## Quick Start
@@ -28,6 +28,12 @@ pyzotero search -q "methodology" --fulltext --json
 
 # Filter by item type
 pyzotero search -q "adaptation" --itemtype journalArticle --json
+
+# Paginate through results
+pyzotero search -q "climate" --limit 20 --offset 20 --json
+
+# Filter by tag
+pyzotero search -q "review" --tag "to-read" --json
 ```
 
 ## Local Search Options
@@ -39,6 +45,8 @@ pyzotero search -q "adaptation" --itemtype journalArticle --json
 | `--itemtype` | Filter by type | `--itemtype journalArticle` |
 | `--fulltext` | Search PDF contents | `--fulltext` |
 | `--limit` | Max results | `--limit 50` |
+| `--offset` | Skip N results (for pagination) | `--offset 20` |
+| `--tag` | Filter by tag | `--tag "to-read"` |
 | `--json` | JSON output (required for local search) | `--json` |
 
 ### Item Types
@@ -50,6 +58,49 @@ Run `pyzotero itemtypes` for the full list.
 ### Collections
 
 Run `pyzotero listcollections` to see all collections with their keys and names.
+
+## Direct Item Access
+
+Retrieve specific items directly by key:
+
+```bash
+# Get a single item by key
+pyzotero item ABC123 --json
+
+# Get child items (attachments, notes) for a parent item
+pyzotero children ABC123 --json
+
+# Get multiple items at once (batch lookup)
+pyzotero subset ABC123 DEF456 GHI789 --json
+```
+
+The `subset` command is more efficient than multiple `item` calls when fetching several items.
+
+## Tags
+
+List and filter by tags in your library:
+
+```bash
+# List all tags in library
+pyzotero tags
+
+# List tags with usage counts (JSON output)
+pyzotero tags --json
+
+# Search filtered by tag
+pyzotero search -q "methodology" --tag "important" --json
+```
+
+## Full-Text Content
+
+Extract indexed full-text content from attachments:
+
+```bash
+# Get full-text content from an attachment
+pyzotero fulltext ATTACHMENT_KEY
+```
+
+**Note:** The `fulltext` command requires the key of an attachment item (PDF, etc.), not the parent item. Use `pyzotero children PARENT_KEY --json` first to find attachment keys.
 
 ## Output Format
 
@@ -110,6 +161,8 @@ pyzotero citations --doi "10.1234/example" --min-citations 50
 ### Cross-Referencing
 
 All Semantic Scholar results include `inLibrary: true/false` indicating whether each paper exists in local Zotero (matched by DOI).
+
+**Performance tip:** Use `--no-check-library` for faster results when you don't need cross-referencing, or use the DOI index caching pattern (see `references/semantic-scholar.md`) for efficient repeated lookups.
 
 For detailed Semantic Scholar documentation, see **`references/semantic-scholar.md`**.
 
