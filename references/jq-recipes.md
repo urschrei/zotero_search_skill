@@ -103,6 +103,76 @@ pyzotero related --doi "10.1234/paper-you-have" --min-citations 50
 # Papers with inLibrary: false are potential additions
 ```
 
+**Workflow 4: Using cached DOI index for efficiency**
+```bash
+# Cache DOI index once at start of session
+pyzotero doiindex > ~/zotero-dois.json
+
+# Run multiple S2 queries using cached index
+pyzotero s2search -q "topic A" --doi-index ~/zotero-dois.json | \
+  jq '[.papers[] | select(.inLibrary == false)]'
+
+pyzotero s2search -q "topic B" --doi-index ~/zotero-dois.json | \
+  jq '[.papers[] | select(.inLibrary == false)]'
+```
+
+## Efficient Batch Operations
+
+### Batch Item Lookup with subset
+
+**Use case:** Fetching multiple items efficiently
+
+Avoid the N+1 pattern of calling `item` repeatedly:
+
+```bash
+# Inefficient: multiple API calls
+pyzotero item ABC123 --json
+pyzotero item DEF456 --json
+pyzotero item GHI789 --json
+
+# Efficient: single batch call
+pyzotero subset ABC123 DEF456 GHI789 --json
+```
+
+**Workflow: Get details for items from a previous search**
+```bash
+# 1. Search and extract keys
+KEYS=$(pyzotero search -q "topic" --json | jq -r '.items[].key' | head -5 | tr '\n' ' ')
+
+# 2. Batch lookup for full details
+pyzotero subset $KEYS --json
+```
+
+## Pagination Patterns
+
+### Iterating Through Large Result Sets
+
+**Use case:** Processing more results than the default limit
+
+```bash
+# Page through results using --offset
+pyzotero search -q "topic" --limit 20 --offset 0 --json   # First 20
+pyzotero search -q "topic" --limit 20 --offset 20 --json  # Next 20
+pyzotero search -q "topic" --limit 20 --offset 40 --json  # Next 20
+```
+
+**Workflow: Collect all results programmatically**
+```bash
+# Get first page and total count
+FIRST=$(pyzotero search -q "topic" --limit 50 --json)
+TOTAL=$(echo "$FIRST" | jq '.count')
+
+# Calculate pages needed
+PAGES=$(( ($TOTAL + 49) / 50 ))
+
+# Fetch remaining pages
+for i in $(seq 1 $((PAGES - 1))); do
+  pyzotero search -q "topic" --limit 50 --offset $((i * 50)) --json
+done
+```
+
+**Note:** Consider whether you actually need all results. For most analysis tasks, a well-filtered subset (using `--itemtype`, `--tag`, `--collection`) is more useful than exhaustive pagination.
+
 ## Processing Recipes
 
 Common jq patterns for analysing search results.
