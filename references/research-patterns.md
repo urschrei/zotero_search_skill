@@ -275,9 +275,71 @@ pyzotero s2search -q "topic review" --sort citations --min-citations 100
 pyzotero references --doi "10.1234/review-article" --min-citations 50
 ```
 
+## Tag-Based Discovery
+
+Tags provide an alternative way to explore and filter your library:
+
+```bash
+# List all tags to understand library organisation
+pyzotero tags --json
+
+# Search within a specific tag
+pyzotero search -q "methodology" --tag "important" --json
+
+# Combine tag filtering with other options
+pyzotero search -q "review" --tag "to-read" --itemtype journalArticle --json
+```
+
+**Workflow for tag exploration:**
+1. List all tags: `pyzotero tags --json`
+2. Identify interesting tags (e.g., "seminal", "methodology", "to-read")
+3. Search within relevant tags to narrow results
+4. Use tags to understand how the library is organised thematically
+
+**When to use tags:**
+- User has organised their library with tags
+- Looking for papers with specific status (e.g., "to-read", "reviewed")
+- Filtering to a curated subset of papers
+
+## Full-Text Analysis Patterns
+
+Extract and analyse full-text content from PDFs programmatically:
+
+### Extracting Full Text
+
+```bash
+# 1. Find attachment keys for a parent item
+pyzotero children PARENT_KEY --json | jq '.items[] | select(.itemType == "attachment") | .key'
+
+# 2. Extract indexed full text from attachment
+pyzotero fulltext ATTACHMENT_KEY
+```
+
+**Note:** The `fulltext` command returns content that Zotero has indexed from the attachment. This is the same content used by `--fulltext` search.
+
+### Pattern: Programmatic Full-Text Extraction
+
+**When:** Need to extract and analyse text from multiple papers
+
+**Workflow:**
+1. Search for papers: `pyzotero search -q "topic" --json`
+2. For each result with attachments:
+   - Get children: `pyzotero children ITEM_KEY --json`
+   - Find PDF attachment key
+   - Extract text: `pyzotero fulltext ATTACHMENT_KEY`
+3. Process extracted text for analysis
+
+**Use cases:**
+- AI summarisation of paper contents
+- Extracting specific sections across multiple papers
+- Building a corpus for text analysis
+- Comparing methodology descriptions across studies
+
 ## Integrating Search with Full-Text Reading
 
 After search identifies key papers, read PDFs directly for deeper analysis. The local file paths in search results enable seamless transition from discovery to reading.
+
+The `fulltext` command provides an alternative to reading PDF files directly when you need the indexed text content.
 
 ### Pattern: Evidence Extraction
 
